@@ -10,21 +10,32 @@ import (
 	"github.com/syncfast/clockwise/internal/tui"
 )
 
-// GetParticipantsZoom retrieves the total participant count from a specified
-// zoom URL. It runs in a loop and updates the passed in `Data` struct every
-// `refreshInterval` seconds.
-func GetParticipantsZoom(url string, refreshInterval int, data *tui.Data, pw *playwright.Playwright) error {
-	if strings.Contains(url, "zoom.us/my/") {
+type Zoom struct {
+	url     string
+	pw      *playwright.Playwright
+	page    playwright.Page
+	timeout float64
+}
+
+func NewZoom(url string, pw *playwright.Playwright) *Zoom {
+	return &Zoom{
+		url:     url,
+		pw:      pw,
+		page:    nil,
+		timeout: 5000,
+	}
+}
+
+func (z *Zoom) VisitMeetingUrl() error {
+	if strings.Contains(z.url, "zoom.us/my/") {
 		return fmt.Errorf(`Error: clockwise is not compatible with Zoom Personal Meeting IDs at the moment.
-Disabling your PMI is as as simple as clicking a checkbox.
-Please visit https://support.zoom.us/hc/en-us/articles/203276937-Using-Personal-Meeting-ID-PMI- for more info.`)
+			Disabling your PMI is as as simple as clicking a checkbox.
+			Please visit https://support.zoom.us/hc/en-us/articles/203276937-Using-Personal-Meeting-ID-PMI- for more info.`)
 	}
 
-	var timeout float64 = 5000
+	z.url = mutateURL(z.url)
 
-	url = mutateURL(url)
-
-	browser, err := pw.Chromium.Launch()
+	browser, err := z.pw.Chromium.Launch()
 	if err != nil {
 		return fmt.Errorf("could not launch browser: %w", err)
 	}
@@ -34,31 +45,50 @@ Please visit https://support.zoom.us/hc/en-us/articles/203276937-Using-Personal-
 		return fmt.Errorf("could not create page: %w", err)
 	}
 
-	if _, err = page.Goto(url, playwright.PageGotoOptions{
+	if _, err = page.Goto(z.url, playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateLoad,
 	}); err != nil {
 		return fmt.Errorf("could not goto: %w", err)
 	}
 
+	return nil
+}
+
+func (z *Zoom) FillBotName(botName string) error {
 	selector := "text=Your Name"
-	if err := page.Fill(selector, "clockwise-bot", playwright.FrameFillOptions{
-		Timeout: &timeout,
+	if err := z.page.Fill(selector, "clockwise-bot", playwright.FrameFillOptions{
+		Timeout: &z.timeout,
 	}); err != nil {
 		return err
 	}
 
-	page.WaitForSelector("button#joinBtn")
+	return nil
+}
 
-	if err := page.Click("button#joinBtn", playwright.PageClickOptions{
-		Timeout: &timeout,
+func (z *Zoom) JoinMeeting() error {
+	z.page.WaitForSelector("button#joinBtn")
+
+	if err := z.page.Click("button#joinBtn", playwright.PageClickOptions{
+		Timeout: &z.timeout,
 	}); err != nil {
 		return err
 	}
 
-	page.WaitForSelector(".footer-button__number-counter")
+	return nil
+}
+
+func (z *Zoom) ActivateVirtualWebcam(camName string) error {
+	return nil
+}
+
+// GetParticipants retrieves the total participant count from a specified
+// zoom URL. It runs in a loop and updates the passed in `Data` struct every
+// `refreshInterval` seconds.
+func (z *Zoom) GetParticipants(refreshInterval int, data *tui.Data) error {
+	z.page.WaitForSelector(".footer-button__number-counter")
 
 	for {
-		res, err := page.QuerySelector(".footer-button__number-counter")
+		res, err := z.page.QuerySelector(".footer-button__number-counter")
 		if err != nil {
 			return err
 		}
