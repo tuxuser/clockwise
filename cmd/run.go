@@ -27,6 +27,11 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
+		refresh_interval, err := cmd.Flags().GetInt("refresh")
+		if err != nil {
+			return err
+		}
+
 		manual := false
 		if url == "" {
 			manual = true
@@ -62,7 +67,7 @@ var runCmd = &cobra.Command{
 			log.Info("Initializing TUI.")
 			url, err := cmd.Flags().GetString("url")
 			go func() {
-				err = scraper(url, 1, &data, pw)
+				err = scraper(url, refresh_interval, &data, pw)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -80,4 +85,5 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().StringP("url", "u", "", "Meeting URL")
 	runCmd.Flags().Bool("jitsi", false, "Force Jitsi URL scraping")
+	runCmd.Flags().IntP("refresh", "r", 1, "Refresh interval in seconds")
 }

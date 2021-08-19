@@ -124,7 +124,7 @@ func Start(data *Data, config *Config) {
 	tick(s, data, config, quit)
 	s.Fini()
 
-	log.Infof("Total cost: %s%.2f", config.GetCurrencySymbol(), data.getCost())
+	log.Infof("Total cost: %s%.2f", config.GetCurrencySymbol(), data.GetCost())
 }
 
 // data stores variables passed around between the various goRoutines.
@@ -151,7 +151,7 @@ func (data *Data) SetCount(count int) {
 }
 
 // Get cost.
-func (data *Data) getCost() float32 {
+func (data *Data) GetCost() float32 {
 	data.mtx.Lock()
 	defer data.mtx.Unlock()
 
@@ -218,7 +218,7 @@ func draw(s tcell.Screen, data *Data, config *Config) {
 	style := tcell.StyleDefault.Foreground(tcell.ColorCornflowerBlue)
 	emitStr(s, 0, 0, style, "Clockwise")
 
-	costString := fmt.Sprintf("Total cost: %s%.2f", config.GetCurrencySymbol(), data.getCost())
+	costString := fmt.Sprintf("Total cost: %s%.2f", config.GetCurrencySymbol(), data.GetCost())
 	emitStr(s, 0, 1, tcell.StyleDefault, costString)
 
 	countString := fmt.Sprintf("Participant count: %s", strconv.Itoa((data.GetCount())))
@@ -249,7 +249,7 @@ func writeCostFile(data *Data, config *Config) {
 	outputFile := outputFolder + "clockwise.txt"
 
 	for {
-		costString := fmt.Sprintf("Total cost: %s%.2f\n", config.GetCurrencySymbol(), data.getCost())
+		costString := fmt.Sprintf("Total cost: %s%.2f\n", config.GetCurrencySymbol(), data.GetCost())
 
 		if err := ioutil.WriteFile(outputFile, []byte(costString), 0600); err != nil {
 			log.Fatal(err)

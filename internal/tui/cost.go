@@ -6,7 +6,7 @@ import "time"
 func calculateCost(data *Data, averageSalary int) {
 	for {
 		count := data.GetCount()
-		total := data.getCost()
+		total := data.GetCost()
 		// FLC explained:
 		// https://smallbusiness.chron.com/calculate-fully-burdened-labor-costs-33072.html
 		// TODO: Make FLC configurable via the config file.

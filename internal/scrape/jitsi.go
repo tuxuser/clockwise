@@ -68,8 +68,26 @@ func GetParticipantsJitsi(url string, refreshInterval int, data *tui.Data, pw *p
 		return fmt.Errorf("failed to wait for participant sidebar: %w", err)
 	}
 
+	res, err := page.WaitForSelector("[aria-label=\"Open / Close chat\"]")
+	if err != nil {
+		return err
+	}
+	res.Click()
+
+	msg_input, err := page.WaitForSelector("[placeholder=\"Type a message\"]")
+	if err != nil {
+		return err
+	}
+
+	msg_input.Fill("Hello I am your watchdog now")
+	text_send_button, err := page.WaitForSelector("[aria-label=\"chat.sendButton\"]")
+	if err != nil {
+		return err
+	}
+
+	text_send_button.Click()
 	for {
-		res, err := page.QuerySelector("#layout_wrapper > div.participants_pane > div")
+		res, err := page.WaitForSelector("#layout_wrapper > div.participants_pane > div")
 		if err != nil {
 			return err
 		}
@@ -88,6 +106,11 @@ func GetParticipantsJitsi(url string, refreshInterval int, data *tui.Data, pw *p
 		}
 
 		data.SetCount(count - 1)
+
+		// Send message with current meeting costs
+		text_msg := fmt.Sprintf("Current cost: € %.2f", data.GetCost())
+		msg_input.Fill(text_msg)
+		text_send_button.Click()
 
 		time.Sleep(time.Second * time.Duration(refreshInterval))
 	}
